@@ -1,29 +1,35 @@
-// go get github.com/russross/blackfriday
+// go get -u gopkg.in/russross/blackfriday.v2
 // go build md2html.go
 package main
 
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
-	"flag"
+	"os"
 
-	"github.com/russross/blackfriday"
+	"gopkg.in/russross/blackfriday.v2"
 )
 
 func main() {
-	flag.Parse()
-
-	md, err := ioutil.ReadFile(flag.Arg(0))
+	md, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, err)
+		return
 	}
 
-/*	html := blackfriday.MarkdownBasic(md)
-	fmt.Println(string(html))*/
+	htmlFlags := blackfriday.CommonHTMLFlags
+	htmlFlags |= blackfriday.FootnoteReturnLinks
+	htmlFlags |= blackfriday.SmartypantsAngledQuotes
+	htmlFlags |= blackfriday.SmartypantsQuotesNBSP
+	//htmlFlags |= blackfriday.HTML_TOC
+	renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{Flags: htmlFlags, Title: "", CSS: ""})
 
-	htmlFlags := blackfriday.HTML_TOC
-	renderer := blackfriday.HtmlRenderer(htmlFlags, "", "")
-	html := blackfriday.MarkdownOptions(md, renderer, blackfriday.Options{Extensions: 0})
+	extFlags := blackfriday.CommonExtensions
+	extFlags |= blackfriday.Footnotes
+	extFlags |= blackfriday.HeadingIDs
+	extFlags |= blackfriday.Titleblock
+	extFlags |= blackfriday.DefinitionLists
+
+	html := blackfriday.Run(md, blackfriday.WithExtensions(extFlags), blackfriday.WithRenderer(renderer))
 	fmt.Println(string(html))
 }
